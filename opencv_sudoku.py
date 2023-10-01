@@ -14,38 +14,23 @@ model = intializePredectionModel()
 
 # 웹 카메라로부터 비디오 입력을 받음
 cap = cv2.VideoCapture(0)
-
-BUFFER_SIZE = 5
-frame_buffer = []
 while True:
     # 카메라로부터 프레임을 캡쳐
     ret, frame = cap.read()
     if not ret:
         break
 
-    # 프레임 버퍼에 프레임 추가
-    frame_buffer.append(frame)
-    # 프레임 버퍼 크기 유지
-    if len(frame_buffer) > BUFFER_SIZE:
-        frame_buffer.pop(0)
-
-    # 여러 프레임의 평균 계산하여 통합 프레임 생성
-    if len(frame_buffer) == BUFFER_SIZE:
-        integrated_frame = np.mean(frame_buffer, axis=0).astype(np.uint8)
-    else:
-        integrated_frame = frame
-
     # 스도쿠 그리드를 추출
-    grid = extract_sudoku_grid(integrated_frame)
+    grid = extract_sudoku_grid(frame)
     # 스도쿠 그리드가 None이 아닐 때 즉, 스도쿠 그리드를 인식했을 때 실행
     if grid is not None:
         # 추출된 그리드를 원근 투영 변환하여 스도쿠만 따로 분리
-        warped = warp_perspective(integrated_frame, grid)
+        warped = warp_perspective(frame, grid)
 
         # 만약 스도쿠 그리드라고 확인되면
         if is_sudoku_grid(warped):
             # 원본 프레임에 그리드 영역을 초록색으로 표시
-            cv2.drawContours(integrated_frame, [grid], 0, (0, 255, 0), 2)
+            cv2.drawContours(frame, [grid], 0, (0, 255, 0), 2)
 
             # # 분리한 스도쿠 영역을 이미지로 저장
             # cv2.imwrite('sudoku_capture.png', warped)
@@ -110,10 +95,10 @@ while True:
                 # 입력으로 받은 numbers 즉 스도쿠 초기 배열에서 숫자가 있으면 0 없으면 1을 나타내는 배열
                 posArray = np.where(numbers > 0, 0, 1)
 
-                # 9x9의 스도쿠 판을 생성
+                # 9x9의 스도쿠 판을 생성합니다.
                 board = np.array_split(numbers, 9)
                 try:
-                    # 스도쿠를 해결
+                    # 스도쿠를 해결합니다.
                     resu = solver.solve(board)
                 except:
                     pass
@@ -148,7 +133,7 @@ while True:
 
                 cv2.imshow('Captured Sudoku', warped)
 
-    cv2.imshow('Sudoku Grid Detector', integrated_frame)
+    cv2.imshow('Sudoku Grid Detector', frame)
 
     # 'q' 키를 누르면 비디오 캡쳐를 종료
     if cv2.waitKey(1) & 0xFF == ord('q'):
