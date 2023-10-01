@@ -1,6 +1,6 @@
 from utliy import *
 import solver
-# TensorFlow의 로그 메시지 레벨을 설정합니다. (3은 오류 메시지만 출력하게 합니다.)
+# TensorFlow의 로그 메시지 레벨을 설정
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 print('Setting UP')
