@@ -154,20 +154,19 @@ def extract_sudoku_grid(frame):
             if len(approx) == 4:
                 return approx
     return None
-#...코드 중복...
-# def order_points(pts):
-#     rect = np.zeros((4, 2), dtype = "float32")
-#     s = pts.sum(axis=1)
-#     rect[0] = pts[np.argmin(s)]
-#     rect[2] = pts[np.argmax(s)]
-#     diff = np.diff(pts, axis=1)
-#     rect[1] = pts[np.argmin(diff)]
-#     rect[3] = pts[np.argmax(diff)]
-#     return rect
+#  ...코드 중복...
+def order_points(pts):
+    rect = np.zeros((4, 2), dtype = "float32")
+    s = pts.sum(axis=1)
+    rect[0] = pts[np.argmin(s)]
+    rect[2] = pts[np.argmax(s)]
+    diff = np.diff(pts, axis=1)
+    rect[1] = pts[np.argmin(diff)]
+    rect[3] = pts[np.argmax(diff)]
+    return rect
 
-#
 def warp_perspective(image, pts):
-    rect = reorder(pts.reshape(4, 2))
+    rect = order_points(pts.reshape(4, 2))
     (tl, tr, br, bl) = rect
     widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
     widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
