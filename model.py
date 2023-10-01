@@ -1,7 +1,5 @@
 import tensorflow as tf
 from keras.preprocessing.image import ImageDataGenerator
-import numpy as np
-import matplotlib.pyplot as plt
 
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
 
@@ -21,10 +19,10 @@ y_test = tf.keras.utils.to_categorical(y_test, 10)
 
 # 이미지 데이터 증강을 위한 설정 회전, 이동, 확대 변환을 적용
 datagen = ImageDataGenerator(
-    rotation_range=10,     # 10도 범위 내에서 이미지를 무작위로 회전
-    width_shift_range=0.1, # 이미지를 좌우로 10% 범위 내에서 무작위로 이동
-    height_shift_range=0.1,# 이미지를 상하로 10% 범위 내에서 무작위로 이동
-    zoom_range=0.1         # 이미지를 10% 범위 내에서 무작위로 확대/축소
+    rotation_range=10,      # 10도 범위 내에서 이미지를 무작위로 회전
+    width_shift_range=0.1,  # 이미지를 좌우로 10% 범위 내에서 무작위로 이동
+    height_shift_range=0.1, # 이미지를 상하로 10% 범위 내에서 무작위로 이동
+    zoom_range=0.1          # 이미지를 10% 범위 내에서 무작위로 확대/축소
 )
 datagen.fit(x_train)
 
@@ -56,11 +54,11 @@ model = tf.keras.Sequential([
     tf.keras.layers.Dense(units=10, activation='softmax')
 ])
 
-# 모델을 컴파일 손실 함수, 최적화 알고리즘, 평가 메트릭을 정의
+# 모델 컴파일 -> 손실 함수, 최적화 알고리즘, 평가 메트릭을 정의
 model.compile(loss='categorical_crossentropy', optimizer=tf.optimizers.Adam(lr=0.001), metrics=['accuracy'])
 # 모델의 구조를 출력
 model.summary()
-# 모델을 훈련합니다. 데이터 증강을 사용한 경우 datagen.flow를 사용하고, 그렇지 않은 경우 기본 훈련 데이터를 사용
+# 모델 훈련 데이터 증강을 사용한 경우 datagen.flow를 사용하고, 그렇지 않은 경우 기본 훈련 데이터를 사용
 model.fit(datagen.flow(x_train, y_train, batch_size=100), validation_data=(x_test, y_test), epochs=10)
 
 # 테스트 데이터로 모델의 성능을 평가
