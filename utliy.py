@@ -79,7 +79,7 @@ def splitBoxes(img):
 
     return boxes  # 9x9, 총 81개의 이미지가 담긴 리스트 반환
 
-# 주어진 셀들에 있는 숫자를 예측한느 함수
+# 주어진 셀들에 있는 숫자를 예측하는 함수
 def getPredection(boxes, model):
     result = []  # 예측 결과를 저장할 리스트
 
@@ -140,64 +140,100 @@ def drawGrid(img):
     return img  # 그리드가 그려진 이미지 반환
 
 # ------------------------------------------------------------------
+# 스도쿠 격자를 추출하는 함수
 def extract_sudoku_grid(frame):
+    # 주어진 프레임을 흑백 이미지로 변환
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # 가우시안 블러 사용
     blur = cv2.GaussianBlur(gray, (5, 5), 0)
+    # Canny 엣지 검출을 사용하여 이미지의 엣지를 검출
     edges = cv2.Canny(blur, 50, 150, apertureSize=3)
-
+    # 엣지에서 외곽선을 찾기
     contours, _ = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    # 외곽선의 크기 순으로 정렬
     contours = sorted(contours, key=cv2.contourArea, reverse=True)
+    # 가장 큰 외곽선부터
     for contour in contours:
+        # 외곽선의 포인트가 4개 이상인 경우만
         if len(contour) >= 4:
+            # 외곽선의 둘레를 계산
             peri = cv2.arcLength(contour, True)
+            # 외곽선의 포인트를 근사화하여 4개의 점으로 변환
             approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
+            # 근사화된 외곽선의 점이 4개인 경우
             if len(approx) == 4:
+                # 해당 외곽선 반환
                 return approx
+    # 적절한 외곽선을 찾지 못한 경우 None 반환
     return None
-#  ...코드 중복...
+
+
+# 4개의 점을 특정 순서로 정렬하는 함수
 def order_points(pts):
+    # 결과로 반환될 4개의 점을 저장할 배열 초기화
     rect = np.zeros((4, 2), dtype = "float32")
+    # 주어진 점들의 좌표값을 합산
     s = pts.sum(axis=1)
+    # x+y 값이 가장 작은 점은 왼쪽 상단에 위치
     rect[0] = pts[np.argmin(s)]
+    # x+y 값이 가장 큰 점은 오른쪽 하단에 위치
     rect[2] = pts[np.argmax(s)]
+    # 주어진 점들의 x, y 좌표값의 차를 계산
     diff = np.diff(pts, axis=1)
+    # x-y 값이 가장 작은 점은 오른쪽 상단에 위치
     rect[1] = pts[np.argmin(diff)]
+    # x-y 값이 가장 큰 점은 왼쪽 하단에 위치
     rect[3] = pts[np.argmax(diff)]
+    # 정렬된 점들 반환
     return rect
 
+
+# 원근 변환을 적용하는 함수
 def warp_perspective(image, pts):
+    # 주어진 4개의 점을 순서대로 정렬(왼쪽 상단, 오른쪽 상단, 오른쪽 하단, 왼쪽 하단 순서)
     rect = order_points(pts.reshape(4, 2))
+    # 정렬된 점들을 각각의 변수에 할당
     (tl, tr, br, bl) = rect
+    # 밑변의 두 길이를 계산
     widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
     widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
+    # 높이의 두 길이를 계산
     heightA = np.sqrt(((tr[0] - br[0]) ** 2) + ((tr[1] - br[1]) ** 2))
     heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
+    # 최대 밑변과 높이를 계산하여 새로운 이미지의 크기를 결정
     maxWidth = max(int(widthA), int(widthB))
     maxHeight = max(int(heightA), int(heightB))
+    # 목표 위치의 4개 점 설정
     dst = np.array([[0, 0], [maxWidth - 1, 0], [maxWidth - 1, maxHeight - 1], [0, maxHeight - 1]], dtype = "float32")
+    # 원래의 4개 점에서 목표 위치의 4개 점으로의 원근 변환 행렬 계산
     M = cv2.getPerspectiveTransform(rect, dst)
+    # 원근 변환 적용
     warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
     return warped
 
+# 이미지가 스도쿠 격자를 포함하고 있는지 판단하는 함수
 def is_sudoku_grid(image):
+    # 이미지를 흑백 이미지로 변환
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # 적응형 임계값을 사용하여 이진 이미지를 생성 (흑백 반전 포함)
     binary = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
-
+    # Hough 변환을 사용하여 이진 이미지에서 직선 검출
     lines = cv2.HoughLines(binary, 1, np.pi / 180, 150)
-
+    # 검출된 직선이 없으면 False 반환 (스도쿠 격자가 아님)
     if lines is None:
         return False
-
-    vertical_lines = 0
-    horizontal_lines = 0
-
+    vertical_lines = 0   # 세로 직선의 개수
+    horizontal_lines = 0 # 가로 직선의 개수
+    # 검출된 모든 직선에 대해
     for rho, theta in lines[:, 0]:
+        # theta 값(직선의 각도)을 기준으로 세로와 가로 직선을 구분
         if 0 <= theta < np.pi/4 or 3*np.pi/4 <= theta < np.pi:
             vertical_lines += 1
         elif np.pi/4 <= theta < 3*np.pi/4:
             horizontal_lines += 1
-
+    # 세로와 가로 직선이 각각 10개 이상 검출되면 True 반환 (스도쿠 격자일 가능성이 높음)
     return vertical_lines >= 10 and horizontal_lines >= 10
+
 def stackImages(imgArray, scale):
     rows = len(imgArray)
     cols = len(imgArray[0])
