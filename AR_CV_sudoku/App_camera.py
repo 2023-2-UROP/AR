@@ -1,4 +1,3 @@
-
 import time as t
 import tensorflow as tf
 from corner_detection_and_perspective_transform import *
